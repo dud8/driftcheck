@@ -152,6 +152,10 @@ def reconcile(plan: Plan, report: DriftReport | None) -> DriftReport | None:
     return report
 
 
+def _issue_title(number: int) -> str:
+    return tools.fetch_issue(number).splitlines()[0].split(": ", 1)[-1]
+
+
 def _criteria_block(plan: Plan) -> str:
     return "\n".join(f"- {c.id} ({c.source}): {c.text}" for c in plan.criteria)
 
@@ -276,6 +280,25 @@ async def analyze(
     reviewed, skipped = _pick_files(diff_by_path, max_files)
     on_event(f"{len(plan.criteria)} criteria → {len(reviewed)} reviewers")
 
+    if not reviewed:
+        # No diff means no evidence, and a synthesizer handed criteria but no reviews will
+        # happily invent some. Answer deterministically instead of asking the model.
+        on_event("no diff to review")
+        return Analysis(
+            pr_number=pr_number,
+            issue_number=issue_number,
+            pr_title=pr["title"],
+            issue_title=_issue_title(issue_number),
+            plan=plan,
+            report=reconcile(
+                plan,
+                DriftReport(
+                    bottom_line="The PR has no reviewable diff, so nothing addresses the issue.",
+                    verdicts=[],
+                ),
+            ),
+        )
+
     sem = asyncio.Semaphore(concurrency)
     outcomes = await asyncio.gather(
         *(_review_one(p, diff_by_path[p], plan, sem) for p in reviewed)
@@ -307,12 +330,11 @@ async def analyze(
         logger.error("synthesizer failed: %s", exc)
         report = None
 
-    issue_title = tools.fetch_issue(issue_number).splitlines()[0].split(": ", 1)[-1]
     return Analysis(
         pr_number=pr_number,
         issue_number=issue_number,
         pr_title=pr["title"],
-        issue_title=issue_title,
+        issue_title=_issue_title(issue_number),
         plan=plan,
         file_reviews=list(reviews),
         report=report,

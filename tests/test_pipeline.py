@@ -341,3 +341,22 @@ def test_a_failed_reviewer_is_retried_once_before_being_given_up_on(monkeypatch,
     assert len(attempts) == 2
     assert result.failed_files == []
     assert result.file_reviews[0].findings[0].verdict == "met"
+
+
+def test_an_empty_diff_cannot_be_reported_as_met(monkeypatch, wired):
+    """No diff means no evidence. The synthesizer is not asked, so it cannot invent any."""
+    _stub_github(monkeypatch, body="Closes #7", diff="")
+    liar = DriftReport(
+        bottom_line="Looks good to me.",
+        verdicts=[
+            Finding(criterion_id="AC1", verdict="met", evidence="line 12", note="done"),
+            Finding(criterion_id="AC2", verdict="met", evidence="line 40", note="done"),
+        ],
+    )
+    wired["install"](plan_of("timeout is configurable", "default stays 30s"), FileReview(path="p"), liar)
+
+    result = asyncio.run(pipeline.analyze(5))
+
+    assert [v.verdict for v in result.report.verdicts] == ["unaddressed", "unaddressed"]
+    assert wired["synth"].prompts == []
+    assert result.file_reviews == []

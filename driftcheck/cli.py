@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import logging
 import sys
 import time
 from dataclasses import asdict
@@ -25,6 +26,10 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--all", action="store_true", help="include low-risk silent changes")
     p.add_argument("--json", dest="as_json", action="store_true", help="emit the raw report")
     args = p.parse_args(argv)
+
+    # The OpenAI provider warns once per turn that it drops the local model's reasoning
+    # blocks. True, harmless, and it would paint the report in stderr noise.
+    logging.getLogger("strands").setLevel(logging.ERROR)
 
     tools.configure(args.repo, args.worktree)
     started = time.monotonic()

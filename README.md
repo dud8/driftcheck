@@ -44,10 +44,22 @@ then reports this:
 ```
 
 Neither file appears anywhere in issue #1321, which names four tools and asks for two of
-them to be fixed. Both had their metadata output behaviour changed anyway. Neither is a bug
-— both are arguably improvements — and that is the point: they are real behaviour changes
-no criterion asked for, in files the issue never mentioned, and nothing in the PR title, the
-issue, or CI says so.
+them to be fixed. Both had their metadata output behaviour changed anyway. Neither is a bug;
+both are arguably improvements. They are still behaviour changes no criterion asked for, in
+files the issue never mentioned.
+
+**This PR is the rare one with written ground truth.** Its author was unusually careful and
+listed both changes in the PR description, in a table whose last column asks *disclosed
+before?* and answers `no` for exactly these two files. DriftCheck never reads a PR
+description. The planner sees the issue; each reviewer sees one file's diff and the criteria;
+the synthesizer sees the PR title and the reviews. No agent holds a tool that can fetch a PR
+body — check `driftcheck/tools.py`, there are three and none of them is that. So the two
+entries above were reconstructed from the diff alone, and they can be checked against what
+the author independently wrote down. That is the difference between a finding and a plausible
+sentence.
+
+The ordinary case is the PR that changes something on the way past and says nothing about it.
+The output looks exactly the same, and there is nothing to check it against.
 
 The full run is in [`examples/villa-pr-1387.txt`](examples/villa-pr-1387.txt).
 [`examples/villa-pr-1387.json`](examples/villa-pr-1387.json) is a **separate** run of the same
@@ -56,8 +68,14 @@ unaddressed, while both silent changes come out identical. That is what run-to-r
 a local model looks like, and hiding it would be dishonest.
 
 For contrast, [`examples/villa-pr-1440.txt`](examples/villa-pr-1440.txt) is a PR from the
-same repo that stayed inside its brief: **no silent changes at all**. A tool that flags
-everything is worth nothing.
+same repo that stayed inside its brief: **no silent changes at all**, and exit code 0. A tool
+that flags everything is worth nothing.
+
+And [`examples/villa-pr-1387-wrong-issue.txt`](examples/villa-pr-1387-wrong-issue.txt) is the
+same PR pointed at an unrelated issue about a data-config file. Every criterion comes back
+`unaddressed`, each naming the file it expected the work in — and all four behaviour changes
+are now out of scope, which is the correct answer when the issue asked for none of them.
+Nothing is invented to fill the gap.
 
 Runs are not deterministic. A 4-bit local model will phrase a finding differently between
 runs and sometimes splits or merges a criterion. Across repeated runs of #1387 the
@@ -123,12 +141,13 @@ Serve a model (see below), then:
 
 The demo above ran entirely on a MacBook Pro (M4 Max, 48 GB) against
 **Qwen3.6-35B-A3B, 4-bit MLX**, served by [LM Studio](https://lmstudio.ai) on
-`localhost:1234`. Nothing left the machine. A PR of 4–7 files takes 2–3 minutes.
+`localhost:1234`. Nothing left the machine. The seven-file run above takes about three and a half
+minutes at `--concurrency 7`.
 
 ```bash
 lms get qwen/qwen3.6-35b-a3b
 lms server start
-lms load qwen/qwen3.6-35b-a3b --context-length 32768
+lms load qwen/qwen3.6-35b-a3b --context-length 65536
 ```
 
 Any OpenAI-compatible endpoint works — vLLM, Ollama, llama.cpp, or the real OpenAI API:
@@ -156,7 +175,7 @@ prose will fail loudly at the planner rather than produce a plausible wrong repo
 .venv/bin/pytest
 ```
 
-41 tests, no network and no model. The adversarial cases are the ones worth reading:
+42 tests, no network and no model. The adversarial cases are the ones worth reading:
 
 | case | file |
 |---|---|
@@ -170,6 +189,7 @@ prose will fail loudly at the planner rather than produce a plausible wrong repo
 | a path that escapes the checkout | `test_read_source_refuses_to_escape_the_checkout` |
 | a reviewer that raises mid-run | `test_a_reviewer_that_raises_is_reported_not_fatal` |
 | a file the issue never named | `test_a_file_the_issue_never_named_is_flagged_as_out_of_scope` |
+| an empty diff reported as satisfied | `test_an_empty_diff_cannot_be_reported_as_met` |
 
 ## Limitations
 

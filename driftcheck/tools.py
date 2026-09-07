@@ -137,44 +137,6 @@ def read_issue(number: int) -> str:
 
 
 @tool
-def read_pull_request(number: int) -> str:
-    """Read a pull request's title, body and the list of files it changed.
-
-    Args:
-        number: The pull request number, without the leading '#'.
-    """
-    pr = fetch_pr(number)
-    files = "\n".join(
-        f"  {f['path']} (+{f['additions']}/-{f['deletions']})" for f in pr.get("files", [])
-    )
-    return _clip(
-        f"# PR #{pr['number']}: {pr['title']}\n"
-        f"merged: {pr.get('mergedAt')}  +{pr['additions']}/-{pr['deletions']}\n\n"
-        f"{pr['body'] or '(empty body)'}\n\nChanged files:\n{files}"
-    )
-
-
-@tool
-def read_diff(number: int, path: str = "") -> str:
-    """Read the diff of a pull request, optionally narrowed to one file.
-
-    Args:
-        number: The pull request number.
-        path: Repository-relative path. Leave empty for the whole diff.
-    """
-    diff = fetch_diff(number)
-    if not path:
-        return _clip(diff)
-    per_file = split_diff(diff)
-    if path in per_file:
-        return _clip(per_file[path])
-    hit = next((k for k in per_file if k.endswith(path)), None)
-    if hit:
-        return _clip(per_file[hit])
-    return f"No diff for {path!r}. Files in this PR: {', '.join(sorted(per_file))}"
-
-
-@tool
 def read_source(path: str, start: int = 1, end: int = 400) -> str:
     """Read lines from a file in the local checkout, to see code the diff did not show.
 

@@ -1,0 +1,55 @@
+$ driftcheck 1387 --repo ScrollPrize/villa --issue 1652 --worktree ~/repos/villa
+#
+# The same merged PR, deliberately checked against an unrelated issue.
+# Nothing in the diff touches scrolls.yaml. Nothing comes back "met".
+
+── DriftCheck ──────────────────────────────────────────────────────────────────────────────────────
+  PR #1387  Preserve segment provenance across the geometry pipeline
+  closes #1652  vesuvius: two published scroll volumes are not reachable by scroll identity (Scroll 1B, and Scroll 4 at 88 keV / 3.24 um)
+
+── acceptance criteria ─────────────────────────────────────────────────────────────────────────────
+  ✗ UNADDRESSED  scrolls.yaml must include an entry for Scroll 1B (54 keV, 7.91 um) so that cfg.get("1b", {}).get("54", {}).get("7.91", {}).get("volume") returns the correct URL instead of None. [explicit]
+      → No changes to scrolls.yaml or related configuration files; PR modifies C++ geometry pipeline
+      → source code.
+        Expected file scrolls.yaml or equivalent configuration is not modified.
+
+  ✗ UNADDRESSED  scrolls.yaml must include an entry for Scroll 4 (88 keV, 3.24 um) so that cfg.get("4", {}).get("88", {}).get("3.24", {}).get("volume") returns the correct URL instead of None. [explicit]
+      → No changes to scrolls.yaml or related configuration files; PR modifies C++ geometry pipeline
+      → source code.
+        Expected file scrolls.yaml or equivalent configuration is not modified.
+
+  ✗ UNADDRESSED  All volumes previously listed in scrolls.yaml must remain reachable and their configurations must remain unchanged. [implied]
+      → No changes to scrolls.yaml or volume.py; PR modifies C++ geometry pipeline source code.
+        Expected file scrolls.yaml or volume.py is not modified.
+
+  ✗ UNADDRESSED  The existing parsing logic for non-numeric scroll IDs in data/volume.py must continue to function correctly without regression. [implied]
+      → No changes to data/volume.py; PR modifies C++ geometry pipeline source code.
+        Expected file data/volume.py is not modified.
+
+── silent changes ──────────────────────────────────────────────────────────────────────────────────
+  ● MEDIUM  volume-cartographer/apps/src/vc_straighten.cpp
+      Replaces unconditional erasure of the 'bbox' key in meta.json with recomputation and
+      preservation of the bounding box from valid points, altering the output metadata format of the
+      straightening tool.
+      → saveGrid function, lines 131-138 (replacing `meta.erase("bbox");`)
+  ● MEDIUM  volume-cartographer/apps/src/vc_tifxyz_trim.cpp
+      Replaces unconditional erasure of `meta["bbox"]` with recomputation and conditional
+      persistence based on trimmed points, altering downstream segment discovery and processing
+      behavior.
+      → lines 174-181: `if (bbox_of_valid_points(trimmed, bb)) { meta["bbox"] = bbox_to_json(bb); }
+      → else if (meta.contains("bbox")) { meta.erase("bbox"); }`
+  ● MEDIUM  volume-cartographer/apps/src/vc_project_tifxyz.cpp
+      Changes `meta` initialization from an empty JSON object to a copy of `src->meta`, causing
+      output files to inherit source segment metadata (scroll_source, target_volume, seed, etc.)
+      instead of starting fresh.
+      → volume-cartographer/apps/src/vc_project_tifxyz.cpp:1603 `Json meta = src->meta;`
+  ● MEDIUM  volume-cartographer/core/src/ABFFlattening.cpp
+      abfFlattenToNewSurface now copies surface.meta to the new surface, previously leaving it empty
+      and causing flattened surfaces to lose provenance metadata.
+      → result->meta = surface.meta;
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+  0 met  0 partial  4 unaddressed   4 silent change(s)
+  The PR implements geometry pipeline provenance preservation and does not address the missing
+  scroll entries in scrolls.yaml required by the acceptance criteria.
+
