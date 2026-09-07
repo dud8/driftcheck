@@ -1,5 +1,0 @@
-strands-agents[openai]>=1.54.0
-pydantic>=2.7
-
-[dev]
-pytest>=8
