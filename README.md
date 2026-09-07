@@ -47,8 +47,11 @@ them to be fixed. Both had their metadata output behaviour changed anyway. Neith
 no criterion asked for, in files the issue never mentioned, and nothing in the PR title, the
 issue, or CI says so.
 
-The full run is in [`examples/villa-pr-1387.txt`](examples/villa-pr-1387.txt), with the raw
-per-agent output in [`examples/villa-pr-1387.json`](examples/villa-pr-1387.json).
+The full run is in [`examples/villa-pr-1387.txt`](examples/villa-pr-1387.txt).
+[`examples/villa-pr-1387.json`](examples/villa-pr-1387.json) is a **separate** run of the same
+PR with `--json`, kept deliberately: the criteria are worded differently and one is marked
+unaddressed, while both silent changes come out identical. That is what run-to-run variance on
+a local model looks like, and hiding it would be dishonest.
 
 For contrast, [`examples/villa-pr-1440.txt`](examples/villa-pr-1440.txt) is a PR from the
 same repo that stayed inside its brief: **no silent changes at all**. A tool that flags

@@ -1,0 +1,34 @@
+
+── DriftCheck ──────────────────────────────────────────────────────────────────────────────────────
+  PR #1440  Handle stalled binary HTTP transfers without a hard deadline
+  closes #1438  Open Data segment fetch: 30s transfer_timeout is too short for large mesh bands, and the timeout is misreported as a missing file
+
+── acceptance criteria ─────────────────────────────────────────────────────────────────────────────
+  ✓ MET          Large binary payloads (e.g., ~118 MB mesh band .tif files) that take longer than 30 seconds to download should complete successfully without timing out. [explicit]
+      → http_fetch.cpp lines 311-316 and 511-516; HttpFetch.cpp makeBinaryClient
+        Disables hard deadline and configures low-speed policy for binary transfers, allowing large
+        payloads to complete without timing out.
+
+  ✓ MET          When a transfer timeout occurs, the error message should indicate a timeout rather than reporting the file as 'missing or empty'. [explicit]
+      → HttpFetch.cpp new block throwing std::runtime_error with resp.error_message
+        Preserves the actual transport error string (e.g., timeout) instead of collapsing it to a
+        generic missing/empty response.
+
+  ✓ MET          The distinction between an empty/missing response and a timeout should be preserved for the caller, not collapsed to the same error message. [explicit]
+      → HttpFetch.cpp same block distinguishing transport errors from empty responses
+        Callers receive the specific error_message for timeouts, while empty responses still fall
+        through to return {}.
+
+  ✓ MET          Small text/JSON config files should continue to work with their current timeout behavior without regression. [implied]
+      → http_fetch.cpp guard; HttpFetch.cpp httpGetString
+        Ensures new low-speed options are only applied when explicitly configured, preserving
+        default curl behavior for small files.
+
+── silent changes ──────────────────────────────────────────────────────────────────────────────────
+  none found — the diff stayed inside what the issue asked for
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+  4 met  0 partial  0 unaddressed   0 silent change(s)
+  The PR successfully implements the timeout bypass and error distinction for large binary files
+  while preserving existing behavior for small text files.
+
