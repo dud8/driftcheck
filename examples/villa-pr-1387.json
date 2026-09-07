@@ -1,0 +1,201 @@
+{
+  "pr_number": 1387,
+  "issue_number": 1321,
+  "pr_title": "Preserve segment provenance across the geometry pipeline",
+  "issue_title": "vc_flatten drops all provenance metadata; vc_tifxyz_trim drops bbox",
+  "plan": {
+    "issue_summary": "Two tools (`vc_flatten` and `vc_tifxyz_trim`) drop metadata: `vc_flatten` discards all provenance metadata, and `vc_tifxyz_trim` drops the `bbox` field instead of recomputing it, causing downstream code to silently skip trimmed segments.",
+    "criteria": [
+      {
+        "id": "AC1",
+        "text": "vc_flatten must preserve all provenance metadata keys from the input (including area_cm2, area_vx2, scroll_source, target_volume, seed, source, vc_gsfs_params, vc_gsfs_mode, vc_gsfs_version, max_gen, elapsed_time_s).",
+        "source": "explicit"
+      },
+      {
+        "id": "AC2",
+        "text": "vc_tifxyz_trim must preserve the bbox metadata by recomputing it rather than dropping it.",
+        "source": "explicit"
+      },
+      {
+        "id": "AC3",
+        "text": "Both vc_flatten and vc_tifxyz_trim should copy the input meta.json and overwrite only what actually changes, following the existing convention used by vc_transform_geom.",
+        "source": "explicit"
+      },
+      {
+        "id": "AC4",
+        "text": "The inconsistent naming of area quantities across tools (area_cm2, area_vx2, area) should be unified to a single name.",
+        "source": "explicit"
+      },
+      {
+        "id": "AC5",
+        "text": "The behavior of vc_transform_geom and vc_tifxyz -r 90 must not regress (they currently preserve all metadata and recompute uuid).",
+        "source": "implied"
+      }
+    ],
+    "in_scope_paths": [
+      "vc_flatten",
+      "vc_tifxyz_trim",
+      "vc_transform_geom",
+      "vc_grow_seg_from_seed.cpp"
+    ]
+  },
+  "file_reviews": [
+    {
+      "path": "volume-cartographer/core/src/QuadSurface.cpp",
+      "findings": [],
+      "out_of_scope_changes": []
+    },
+    {
+      "path": "volume-cartographer/apps/src/vc_straighten.cpp",
+      "findings": [],
+      "out_of_scope_changes": [
+        {
+          "path": "volume-cartographer/apps/src/vc_straighten.cpp",
+          "description": "Changed bbox handling from always erasing to recomputing: instead of `meta.erase(\"bbox\")`, the code now calls `bbox_of_valid_points(P, bb)` and writes the recomputed bbox to meta.json, only erasing if there are genuinely no valid points. This changes the output metadata behavior of vc_straighten.",
+          "risk": "medium",
+          "evidence": "Lines 131-140: replaced `meta.erase(\"bbox\")` with a conditional that computes and writes bbox via `bbox_of_valid_points` and `bbox_to_json`, adding `#include \"vc/core/util/Rect3D.hpp\"`"
+        }
+      ]
+    },
+    {
+      "path": "volume-cartographer/apps/src/vc_tifxyz_trim.cpp",
+      "findings": [
+        {
+          "criterion_id": "AC2",
+          "verdict": "met",
+          "evidence": "Lines 174-183: Replaces `if (meta.contains(\"bbox\")) meta.erase(\"bbox\");` with a recomputation block that calls `bbox_of_valid_points(trimmed, bb)` and writes the result via `meta[\"bbox\"] = bbox_to_json(bb)`, only erasing when no valid points remain.",
+          "note": "Directly implements AC2's requirement to preserve bbox by recomputing rather than dropping it."
+        },
+        {
+          "criterion_id": "AC3",
+          "verdict": "met",
+          "evidence": "Lines 172-185: Reads the full `meta.json` into a `Json` object, modifies only the `bbox` key (or erases it in the edge case of no valid points), then writes the entire object back to `stage / \"meta.json\"`.",
+          "note": "Follows the vc_transform_geom convention of copying all metadata and overwriting only what changes."
+        }
+      ],
+      "out_of_scope_changes": []
+    },
+    {
+      "path": "volume-cartographer/apps/src/vc_project_tifxyz.cpp",
+      "findings": [
+        {
+          "criterion_id": "AC3",
+          "verdict": "met",
+          "evidence": "Json meta = src->meta;",
+          "note": "Replaces empty Json initialization with a copy of the source segment's metadata, directly fulfilling the requirement to preserve input metadata and overlay new parameters."
+        }
+      ],
+      "out_of_scope_changes": []
+    },
+    {
+      "path": "volume-cartographer/core/src/ABFFlattening.cpp",
+      "findings": [
+        {
+          "criterion_id": "AC1",
+          "verdict": "met",
+          "evidence": "Lines 2408-2411: `result->meta = surface.meta;` copies the entire provenance metadata from the source surface to the flattened result, preserving all keys (scroll_source, target_volume, seed, etc.) as the comment explicitly states.",
+          "note": "The assignment copies all metadata keys from input to output, satisfying the preservation requirement."
+        },
+        {
+          "criterion_id": "AC3",
+          "verdict": "met",
+          "evidence": "Lines 2408-2411: `result->meta = surface.meta;` copies the input meta.json wholesale, following the convention of copying then overwriting only what changes (the new surface's points+scale constructor leaves meta empty, so this assignment is the only modification).",
+          "note": "This is a direct copy of the input metadata, consistent with the vc_transform_geom convention described in AC3."
+        },
+        {
+          "criterion_id": "AC2",
+          "verdict": "unaddressed",
+          "evidence": "No code in this diff touches vc_tifxyz_trim or bbox recomputation.",
+          "note": "This file handles ABF flattening, not tifxyz_trim."
+        },
+        {
+          "criterion_id": "AC4",
+          "verdict": "unaddressed",
+          "evidence": "No changes to area naming (area_cm2, area_vx2, area) appear in this diff.",
+          "note": "This file does not deal with area quantity naming conventions."
+        },
+        {
+          "criterion_id": "AC5",
+          "verdict": "unaddressed",
+          "evidence": "This file is about ABF flattening, not vc_transform_geom or vc_tifxyz -r 90.",
+          "note": "No regression check for those tools is present here."
+        }
+      ],
+      "out_of_scope_changes": []
+    },
+    {
+      "path": "volume-cartographer/core/include/vc/core/util/QuadSurface.hpp",
+      "findings": [],
+      "out_of_scope_changes": [
+        {
+          "path": "volume-cartographer/core/include/vc/core/util/QuadSurface.hpp",
+          "description": "Adds a new C++ function declaration `bbox_to_json` to serialize a `Rect3D` bbox to JSON.",
+          "risk": "low",
+          "evidence": "Lines 522-524: `+utils::Json bbox_to_json(const Rect3D& bbox);`"
+        }
+      ]
+    },
+    {
+      "path": "volume-cartographer/core/include/vc/core/util/Rect3D.hpp",
+      "findings": [
+        {
+          "criterion_id": "AC2",
+          "verdict": "partial",
+          "evidence": "bool bbox_of_valid_points(const cv::Mat_<cv::Vec3f>& points, Rect3D& out);",
+          "note": "Declares the helper function required to recompute bounding box from valid grid points, providing the mechanism AC2 asks for. Implementation and integration into vc_tifxyz_trim are not shown in this diff."
+        }
+      ],
+      "out_of_scope_changes": []
+    }
+  ],
+  "report": {
+    "bottom_line": "The PR successfully fixes the metadata dropping in `vc_flatten` and `vc_tifxyz_trim` as requested, but leaves area naming unification and regression checks for other tools unaddressed, while introducing a behavioral change to `vc_straighten`'s bbox handling.",
+    "verdicts": [
+      {
+        "criterion_id": "AC1",
+        "verdict": "met",
+        "evidence": "Lines 2408-2411 in ABFFlattening.cpp: `result->meta = surface.meta;` copies the entire provenance metadata from the source surface to the flattened result, preserving all keys.",
+        "note": "Directly implements AC1's requirement to preserve all provenance metadata keys."
+      },
+      {
+        "criterion_id": "AC2",
+        "verdict": "met",
+        "evidence": "Lines 174-183 in vc_tifxyz_trim.cpp: Replaces `if (meta.contains(\"bbox\")) meta.erase(\"bbox\");` with a recomputation block that calls `bbox_of_valid_points(trimmed, bb)` and writes the result via `meta[\"bbox\"] = bbox_to_json(bb)`.",
+        "note": "Directly implements AC2's requirement to preserve bbox by recomputing rather than dropping it."
+      },
+      {
+        "criterion_id": "AC3",
+        "verdict": "met",
+        "evidence": "Lines 172-185 in vc_tifxyz_trim.cpp and `Json meta = src->meta;` in vc_project_tifxyz.cpp copy the full input metadata and overwrite only changed keys.",
+        "note": "Follows the vc_transform_geom convention of copying all metadata and overwriting only what changes."
+      },
+      {
+        "criterion_id": "AC4",
+        "verdict": "unaddressed",
+        "evidence": "No changes to area naming (area_cm2, area_vx2, area) appear in any reviewed file.",
+        "note": "Should be addressed in files handling area calculations (e.g., vc_flatten, vc_tifxyz_trim, vc_straighten)."
+      },
+      {
+        "criterion_id": "AC5",
+        "verdict": "unaddressed",
+        "evidence": "No changes to vc_transform_geom or vc_tifxyz -r 90 are present in the diff.",
+        "note": "Regression check for these tools is not covered here."
+      }
+    ],
+    "silent_changes": [
+      {
+        "path": "volume-cartographer/apps/src/vc_straighten.cpp",
+        "description": "Changed bbox handling from always erasing to recomputing: instead of `meta.erase(\"bbox\")`, the code now calls `bbox_of_valid_points(P, bb)` and writes the recomputed bbox to meta.json, only erasing if there are genuinely no valid points.",
+        "risk": "medium",
+        "evidence": "Lines 131-140: replaced `meta.erase(\"bbox\")` with a conditional that computes and writes bbox via `bbox_of_valid_points` and `bbox_to_json`, adding `#include \"vc/core/util/Rect3D.hpp\"`"
+      },
+      {
+        "path": "volume-cartographer/core/include/vc/core/util/QuadSurface.hpp",
+        "description": "Adds a new C++ function declaration `bbox_to_json` to serialize a `Rect3D` bbox to JSON.",
+        "risk": "low",
+        "evidence": "Lines 522-524: `+utils::Json bbox_to_json(const Rect3D& bbox);`"
+      }
+    ]
+  },
+  "skipped_files": []
+}

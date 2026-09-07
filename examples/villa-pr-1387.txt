@@ -1,0 +1,43 @@
+
+── DriftCheck ──────────────────────────────────────────────────────────────────────────────────────
+  PR #1387  Preserve segment provenance across the geometry pipeline
+  closes #1321  vc_flatten drops all provenance metadata; vc_tifxyz_trim drops bbox
+
+── acceptance criteria ─────────────────────────────────────────────────────────────────────────────
+  ✓ MET          vc_flatten must retain all provenance metadata keys (e.g., source, seed, vc_gsfs_params, etc.) from the input surface metadata. [implied]
+      → ABFFlattening.cpp:2411: `result->meta = surface.meta;`
+        Copies all provenance keys (source, seed, vc_gsfs_params, etc.) from input surface to output
+        surface.
+
+  ✓ MET          vc_tifxyz_trim must retain or recompute the bbox metadata, ensuring it is present in the output. [implied]
+      → vc_tifxyz_trim.cpp:174-182
+        Replaces unconditional bbox erase with recomputation from valid points, ensuring bbox is
+        present in output when trimming succeeds.
+
+  ✓ MET          The implementation for vc_flatten and vc_tifxyz_trim should follow the pattern of vc_transform_geom by copying the input meta.json and overwriting only values that actually change. [explicit]
+      → ABFFlattening.cpp:2411 and vc_tifxyz_trim.cpp:172, 176-177
+        Follows the vc_transform_geom pattern: copies input meta.json wholesale, then overwrites
+        only values that change.
+
+  ✓ MET          vc_transform_geom and vc_tifxyz must continue to preserve all metadata and regenerate the uuid as they currently do. [implied]
+      → vc_project_tifxyz.cpp: `Json meta = src->meta;`
+        Preserves source metadata, fulfilling the requirement to continue preserving all metadata.
+
+── silent changes ──────────────────────────────────────────────────────────────────────────────────
+  ● MEDIUM  volume-cartographer/apps/src/vc_straighten.cpp
+      saveGrid no longer unconditionally erases 'bbox' from meta.json; instead it recomputes the
+      bounding box via bbox_of_valid_points and preserves it when valid points exist, only erasing
+      if there are genuinely no valid points.
+      → saveGrid lines 131-140: replaced `meta.erase("bbox")` with a recomputation block that sets
+      → or conditionally erases bbox
+  ● MEDIUM  volume-cartographer/apps/src/vc_project_tifxyz.cpp
+      Changes metadata initialization from empty to `src->meta`, preserving source provenance keys
+      (scroll_source, target_volume, seed) in the output of `vc_project_tifxyz`.
+      → `Json meta = src->meta;` replacing `Json meta;` in `main()`
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+  4 met  0 partial  0 unaddressed   2 silent change(s)
+  The PR successfully fixes the metadata loss in `vc_flatten` and `vc_tifxyz_trim` as requested, but
+  introduces behavioral changes in `vc_straighten` and `vc_project_tifxyz` that preserve metadata
+  where it was previously discarded.
+

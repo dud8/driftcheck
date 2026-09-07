@@ -1,0 +1,154 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 660" width="1120" height="660" font-family="ui-sans-serif,-apple-system,Segoe UI,Helvetica,Arial,sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#8c96a3"/>
+    </marker>
+    <marker id="ad" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#c0a05a"/>
+    </marker>
+    <style>
+      .t   { fill:#1b1f24; font-size:13px; }
+      .h   { fill:#1b1f24; font-size:14.5px; font-weight:650; }
+      .m   { fill:#6b7280; font-size:11.5px; }
+      .mm  { fill:#6b7280; font-size:10.5px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+      .code{ fill:#1b1f24; font-size:11.5px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+      .lbl { fill:#8c96a3; font-size:10px; letter-spacing:.09em; }
+      .agent { fill:#eef3fe; stroke:#9db8ec; }
+      .tool  { fill:#fdf7ea; stroke:#dcb96e; }
+      .data  { fill:#f1faf3; stroke:#8cc79c; }
+      .plain { fill:#f7f8fa; stroke:#d5dae0; }
+      .wire  { stroke:#8c96a3; stroke-width:1.4; fill:none; }
+    </style>
+  </defs>
+
+  <rect width="1120" height="660" fill="#ffffff"/>
+
+  <text x="34" y="40" class="h" font-size="21">DriftCheck</text>
+  <text x="34" y="62" class="m">Three Strands agents. Each stage is defined by what it is not allowed to see.</text>
+  <text x="1086" y="40" class="m" text-anchor="end">strands-agents 1.54 · agents-as-tools</text>
+
+  <!-- ============ column headers ============ -->
+  <text x="34"  y="106" class="lbl">SOURCE</text>
+  <text x="230" y="106" class="lbl">STAGE 1 · PLAN</text>
+  <text x="462" y="106" class="lbl">STAGE 2 · REVIEW (FAN-OUT)</text>
+  <text x="734" y="106" class="lbl">STAGE 3 · SYNTHESIZE</text>
+  <text x="952" y="106" class="lbl">OUTPUT</text>
+
+  <!-- ============ source ============ -->
+  <rect x="30" y="120" width="152" height="196" rx="9" class="plain"/>
+  <text x="46" y="146" class="t" font-weight="600">gh CLI</text>
+  <text x="46" y="167" class="mm">gh issue view</text>
+  <text x="46" y="184" class="mm">gh pr view --json</text>
+  <text x="46" y="201" class="mm">gh pr diff</text>
+  <line x1="46" y1="216" x2="166" y2="216" stroke="#d5dae0"/>
+  <text x="46" y="238" class="t" font-weight="600">local checkout</text>
+  <text x="46" y="259" class="mm">read file lines</text>
+  <text x="46" y="276" class="mm">rg -w &lt;symbol&gt;</text>
+  <text x="46" y="302" class="m">no server, no keys</text>
+
+  <!-- ============ stage 1: planner ============ -->
+  <rect x="222" y="120" width="190" height="128" rx="9" class="agent"/>
+  <text x="238" y="147" class="t" font-weight="650">planner agent</text>
+  <text x="238" y="168" class="m">reads the issue and writes</text>
+  <text x="238" y="184" class="m">down the acceptance criteria</text>
+  <rect x="238" y="196" width="106" height="20" rx="5" class="tool"/>
+  <text x="247" y="210" class="code">read_issue</text>
+  <text x="238" y="236" class="m" font-style="italic">never sees the diff</text>
+
+  <rect x="222" y="266" width="190" height="86" rx="9" class="data"/>
+  <text x="238" y="290" class="code" font-weight="650">Plan</text>
+  <text x="238" y="310" class="m">criteria[] · explicit / implied</text>
+  <text x="238" y="327" class="m">in_scope_paths[]</text>
+  <text x="238" y="344" class="mm">pydantic structured output</text>
+
+  <text x="238" y="386" class="m">The criteria are fixed before</text>
+  <text x="238" y="402" class="m">any code is read, so they cannot</text>
+  <text x="238" y="418" class="m">be bent to fit what the PR did.</text>
+
+  <!-- ============ stage 2: reviewers ============ -->
+  <rect x="452" y="152" width="228" height="96" rx="9" class="agent" opacity="0.45"/>
+  <rect x="446" y="140" width="228" height="96" rx="9" class="agent" opacity="0.7"/>
+  <rect x="440" y="128" width="228" height="96" rx="9" class="agent"/>
+  <text x="456" y="155" class="t" font-weight="650">reviewer sub-agent</text>
+  <text x="456" y="175" class="m">one per changed file, run</text>
+  <text x="456" y="191" class="m">concurrently (asyncio)</text>
+  <rect x="456" y="200" width="104" height="19" rx="5" class="tool"/>
+  <text x="464" y="214" class="code">read_source</text>
+  <rect x="566" y="200" width="98" height="19" rx="5" class="tool"/>
+  <text x="574" y="214" class="code">find_callers</text>
+
+  <rect x="440" y="278" width="240" height="104" rx="9" class="data"/>
+  <text x="456" y="302" class="code" font-weight="650">FileReview[ ]</text>
+  <text x="456" y="322" class="m">findings[] — met / partial /</text>
+  <text x="456" y="338" class="m">unaddressed, each with a hunk</text>
+  <text x="456" y="358" class="m">out_of_scope_changes[]</text>
+  <text x="456" y="374" class="mm">path · description · risk · evidence</text>
+
+  <text x="440" y="418" class="m">One file per agent. A large diff</text>
+  <text x="440" y="434" class="m">cannot bury a small behavioural</text>
+  <text x="440" y="450" class="m">change in the noise around it.</text>
+
+  <!-- ============ stage 3: synthesizer ============ -->
+  <rect x="716" y="128" width="192" height="128" rx="9" class="agent"/>
+  <text x="732" y="155" class="t" font-weight="650">synthesizer agent</text>
+  <text x="732" y="176" class="m">one verdict per criterion,</text>
+  <text x="732" y="192" class="m">silent changes deduplicated</text>
+  <rect x="732" y="204" width="160" height="20" rx="5" class="tool"/>
+  <text x="740" y="218" class="code">review_file  (as_tool)</text>
+  <text x="732" y="244" class="m" font-style="italic">can send a file back</text>
+
+  <rect x="716" y="278" width="192" height="66" rx="9" class="plain"/>
+  <text x="732" y="302" class="t" font-weight="600">reconcile()</text>
+  <text x="732" y="322" class="m">deterministic: fills gaps,</text>
+  <text x="732" y="337" class="m">drops invented ids</text>
+
+  <!-- ============ output ============ -->
+  <rect x="944" y="128" width="146" height="216" rx="9" class="data"/>
+  <text x="960" y="152" class="code" font-weight="650">DriftReport</text>
+  <text x="960" y="176" class="t">✓ met</text>
+  <text x="960" y="196" class="t">◐ partial</text>
+  <text x="960" y="216" class="t">✗ unaddressed</text>
+  <line x1="960" y1="232" x2="1074" y2="232" stroke="#8cc79c"/>
+  <text x="960" y="254" class="t" font-weight="600">silent changes</text>
+  <text x="960" y="274" class="m">behaviour the issue</text>
+  <text x="960" y="290" class="m">never asked about</text>
+  <text x="960" y="316" class="mm">exit 1 if either</text>
+  <text x="960" y="332" class="mm">list is non-empty</text>
+
+  <!-- ============ wires ============ -->
+  <path d="M182,196 H206 V184 H218" class="wire" marker-end="url(#a)"/>
+  <path d="M317,248 V262" class="wire" marker-end="url(#a)"/>
+  <path d="M412,308 H426 V176 H436" class="wire" marker-end="url(#a)"/>
+  <text x="408" y="240" class="m" transform="rotate(-90 408 240)">criteria</text>
+
+  <path d="M106,120 V88 H436 V124" class="wire" stroke-dasharray="4 3" marker-end="url(#a)"/>
+  <text x="240" y="83" class="m">the diff goes straight to the reviewers, sliced one file each</text>
+
+  <path d="M560,224 V272" class="wire" marker-end="url(#a)"/>
+  <path d="M680,330 H698 V192 H712" class="wire" marker-end="url(#a)"/>
+  <text x="694" y="266" class="m" transform="rotate(-90 694 266)">reviews</text>
+
+  <path d="M812,256 V272" class="wire" marker-end="url(#a)"/>
+  <path d="M908,300 H926 V236 H940" class="wire" marker-end="url(#a)"/>
+
+  <!-- ============ model bar ============ -->
+  <rect x="30" y="486" width="1060" height="82" rx="9" class="plain"/>
+  <text x="52" y="512" class="lbl">MODEL PROVIDER — SELECTED BY ENV VAR, NOTHING ON THE DEFAULT PATH NEEDS CREDENTIALS</text>
+  <rect x="52" y="524" width="300" height="30" rx="6" fill="#eef3fe" stroke="#9db8ec"/>
+  <text x="64" y="544" class="code">OpenAIModel → LM Studio localhost:1234</text>
+  <text x="366" y="544" class="m">default · qwen3.6-35b-a3b, 4-bit MLX, on-device</text>
+  <rect x="700" y="524" width="150" height="30" rx="6" class="plain"/>
+  <text x="712" y="544" class="code">BedrockModel</text>
+  <text x="864" y="544" class="m">DRIFTCHECK_PROVIDER=bedrock</text>
+
+  <!-- ============ legend ============ -->
+  <rect x="30" y="596" width="14" height="14" rx="4" class="agent"/>
+  <text x="52" y="608" class="m">Strands Agent</text>
+  <rect x="150" y="596" width="14" height="14" rx="4" class="tool"/>
+  <text x="172" y="608" class="m">@tool</text>
+  <rect x="234" y="596" width="14" height="14" rx="4" class="data"/>
+  <text x="256" y="608" class="m">Pydantic structured output</text>
+  <rect x="440" y="596" width="14" height="14" rx="4" class="plain"/>
+  <text x="462" y="608" class="m">deterministic Python</text>
+  <text x="1086" y="608" class="m" text-anchor="end">Apache-2.0</text>
+</svg>
