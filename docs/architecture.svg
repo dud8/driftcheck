@@ -121,7 +121,7 @@
   <path d="M412,308 H426 V176 H436" class="wire" marker-end="url(#a)"/>
   <text x="408" y="240" class="m" transform="rotate(-90 408 240)">criteria</text>
 
-  <path d="M106,120 V88 H436 V124" class="wire" stroke-dasharray="4 3" marker-end="url(#a)"/>
+  <path d="M182,140 H198 V88 H436 V124" class="wire" stroke-dasharray="4 3" marker-end="url(#a)"/>
   <text x="240" y="83" class="m">the diff goes straight to the reviewers, sliced one file each</text>
 
   <path d="M560,224 V272" class="wire" marker-end="url(#a)"/>

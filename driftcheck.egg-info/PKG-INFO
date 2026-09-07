@@ -1,6 +1,18 @@
-# DriftCheck
+Metadata-Version: 2.4
+Name: driftcheck
+Version: 0.1.0
+Summary: Did this merged PR do what its issue asked, and what did it change silently along the way?
+License: Apache-2.0
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: strands-agents[openai]>=1.54.0
+Requires-Dist: pydantic>=2.7
+Provides-Extra: dev
+Requires-Dist: pytest>=8; extra == "dev"
+Dynamic: license-file
 
-[![tests](https://github.com/dud8/driftcheck/actions/workflows/tests.yml/badge.svg)](https://github.com/dud8/driftcheck/actions/workflows/tests.yml)
+# DriftCheck
 
 A merged pull request says `Closes #1321`. The tests were green, the reviewer approved it,
 and it shipped. Six months later something in a neighbouring tool behaves differently and
