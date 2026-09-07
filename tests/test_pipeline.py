@@ -360,3 +360,11 @@ def test_an_empty_diff_cannot_be_reported_as_met(monkeypatch, wired):
     assert [v.verdict for v in result.report.verdicts] == ["unaddressed", "unaddressed"]
     assert wired["synth"].prompts == []
     assert result.file_reviews == []
+
+
+def test_each_agent_holds_only_the_tools_its_stage_is_allowed():
+    """The architecture claim, checked on the real agents: the planner cannot reach the
+    diff or the PR body, and the synthesizer really does carry the reviewer as a tool."""
+    assert pipeline.make_planner().tool_names == ["read_issue"]
+    assert sorted(pipeline.make_reviewer().tool_names) == ["find_callers", "read_source"]
+    assert pipeline.make_synthesizer(pipeline.make_reviewer()).tool_names == ["review_file"]

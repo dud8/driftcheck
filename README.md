@@ -175,7 +175,7 @@ prose will fail loudly at the planner rather than produce a plausible wrong repo
 .venv/bin/pytest
 ```
 
-42 tests, no network and no model. The adversarial cases are the ones worth reading:
+43 tests, no network and no model. The adversarial cases are the ones worth reading:
 
 | case | file |
 |---|---|
@@ -190,6 +190,7 @@ prose will fail loudly at the planner rather than produce a plausible wrong repo
 | a reviewer that raises mid-run | `test_a_reviewer_that_raises_is_reported_not_fatal` |
 | a file the issue never named | `test_a_file_the_issue_never_named_is_flagged_as_out_of_scope` |
 | an empty diff reported as satisfied | `test_an_empty_diff_cannot_be_reported_as_met` |
+| each agent holds only its stage's tools | `test_each_agent_holds_only_the_tools_its_stage_is_allowed` |
 
 ## Limitations
 

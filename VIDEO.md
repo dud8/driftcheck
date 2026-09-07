@@ -153,10 +153,10 @@ the issue asked for`.
 **Shot.** Split screen: `pytest` output on the left, repo root on the right.
 
 ```bash
-pytest -q      # 42 passed
+pytest -q      # 43 passed
 ```
 
-> 42 tests, no network, no model. Including a PR that closes an issue it does not address,
+> 43 tests, no network, no model. Including a PR that closes an issue it does not address,
 > and an empty diff that must never come back "met".
 
 > Local model, Apache-2.0, one file of glue per stage.
